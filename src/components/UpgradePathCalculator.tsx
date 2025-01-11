@@ -208,7 +208,7 @@ const UpgradePathCalculator: React.FC = () => {
               <ul className="list-disc pl-6 space-y-2">
                 <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
                 <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
-                <li>Community Build has no LTA versions, with no intermediate upgrades needed after 9.9 LTA</li>
+                <li>Community Build has no LTA versions, and no intermediate upgrades are needed after 9.9 LTA</li>
               </ul>
             </div>
           </CardContent>
