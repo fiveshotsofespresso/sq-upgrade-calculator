@@ -198,7 +198,7 @@ const UpgradePathCalculator: React.FC = () => {
     <div className="w-full max-w-4xl p-6 space-y-6">
       <div className="space-y-4">
         <p className="text-lg">
-          Figuring out your upgrade path with SonarQube can be tricky. Here's a tool that lets you select a version and understand what versions you need to upgrade through in order to arrive at a supported version.
+          Figuring out your upgrade path with SonarQube can be tricky. Here's a tool that lets you select a version and understand what versions you need to upgrade through in order to arrive at an active version.
         </p>
         
         <Card className="bg-blue-50">
@@ -206,7 +206,7 @@ const UpgradePathCalculator: React.FC = () => {
             <div className="space-y-2">
               <p><strong>Key things to know:</strong></p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>LTA (Long Term Support) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
+                <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
                 <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
               </ul>
             </div>
