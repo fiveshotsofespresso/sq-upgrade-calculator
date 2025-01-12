@@ -3,7 +3,7 @@
 
 import React, { useState, ChangeEvent } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Define types
 type Edition = 'community' | 'developer' | 'enterprise' | 'datacenter';
@@ -16,7 +16,7 @@ type LTAVersions = {
 };
 
 // Constants
-const VERSIONS: string[] = "6.7,6.7.1,6.7.2,6.7.3,6.7.4,6.7.5,6.7.6,6.7.7,7.0,7.1,7.2,7.2.1,7.3,7.4,7.5,7.6,7.7,7.8,7.9,7.9.1,7.9.2,7.9.3,7.9.4,7.9.5,7.9.6,8.0,8.1,8.2,8.3,8.3.1,8.4,8.4.1,8.4.2,8.5,8.5.1,8.6,8.6.1,8.7,8.7.1,8.8,8.9,8.9.1,8.9.2,8.9.3,8.9.4,8.9.5,8.9.6,8.9.7,8.9.8,8.9.9,8.9.10,9.0,9.0.1,9.1,9.2,9.2.1,9.2.2,9.2.3,9.2.4,9.3,9.4,9.5,9.6,9.6.1,9.7,9.7.1,9.8,9.9,9.9.1,9.9.2,9.9.3,9.9.4,9.9.5,9.9.6,9.9.7,9.9.8,10.0,10.1,10.2,10.2.1,10.3,10.4,10.4.1,10.5,10.5.1,10.6,10.7,10.8,10.8.1".split(',');
+const VERSIONS: string[] = "6.7,6.7.1,6.7.2,6.7.3,6.7.4,6.7.5,6.7.6,6.7.7,7.0,7.1,7.2,7.2.1,7.3,7.4,7.5,7.6,7.7,7.8,7.9,7.9.1,7.9.2,7.9.3,7.9.4,7.9.5,7.9.6,8.0,8.1,8.2,8.3,8.3.1,8.4,8.4.1,8.4.2,8.5,8.5.1,8.6,8.6.1,8.7,8.7.1,8.8,8.9,8.9.1,8.9.2,8.9.3,8.9.4,8.9.5,8.9.6,8.9.7,8.9.8,8.9.9,8.9.10,9.0,9.0.1,9.1,9.2,9.2.1,9.2.2,9.2.3,9.2.4,9.3,9.4,9.5,9.6,9.6.1,9.7,9.7.1,9.8,9.9,9.9.1,9.9.2,9.9.3,9.9.4,9.9.5,9.9.6,9.9.7,9.9.8,10.0,10.1,10.2,10.2.1,10.3,10.4,10.4.1,10.5,10.5.1,10.6,10.7,10.8,10.8.1,2025.1,2025.1.1,2025.2".split(',');
 
 const COMMUNITY_BUILD_VERSIONS: string[] = "24.12,25.1".split(',');
 
@@ -24,7 +24,8 @@ const LTA_VERSIONS: LTAVersions = {
   "6.7": true,
   "7.9": true,
   "8.9": true,
-  "9.9": true
+  "9.9": true,
+  "2025.1": true
 };
 
 // Helper functions
@@ -64,7 +65,7 @@ const getLatestPatchVersion = (majorMinor: string): string => {
       return major === targetMajor && minor === targetMinor;
     })
     .sort((a, b) => compareVersions(a, b))
-    .pop() || majorMinor;
+    .pop() ?? majorMinor;
 };
 
 const hasFutureLTAs = (version: string): boolean => {
@@ -138,11 +139,9 @@ const findUpgradePath = (startVersion: string, edition: Edition = "community"): 
       messages.push("Note: After 10.7, Community Edition has been renamed to Community Build with a new versioning scheme.");
       
       path.push(getLatestVersion(true));
-    } else {
-      if (startVersion !== getLatestVersion(true)) {
+    } else if (startVersion !== getLatestVersion(true)) {
         path.push(getLatestVersion(true));
       }
-    }
   } else {
     if (isAfterLastLTA(startVersion)) {
       const latestVersion = getLatestVersion();
@@ -302,8 +301,8 @@ const UpgradePathCalculator: React.FC = () => {
               ? 'bg-green-50 border border-green-200'
               : 'bg-yellow-50 border border-yellow-200'
           } p-4 rounded-lg mb-4`}>
-            {messages.map((message, index) => (
-              <p key={index} className={
+            {messages.map((message) => (
+              <p key={`message-${message}`} className={
                 messages.length === 1 && messages[0].includes('latest version')
                   ? 'text-green-800'
                   : 'text-yellow-800'
