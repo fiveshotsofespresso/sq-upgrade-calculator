@@ -159,8 +159,10 @@ const findUpgradePath = (startVersion: string, edition: Edition = "community"): 
     
     path.push(getLatestVersion());
   }
+ 
+  const finalPath = Array.from(new Set(path));
   
-  return { path, messages };
+  return {path: finalPath, messages };
 };
 
 const UpgradePathCalculator: React.FC = () => {
