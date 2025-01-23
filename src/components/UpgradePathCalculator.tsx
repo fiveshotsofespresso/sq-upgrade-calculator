@@ -1,4 +1,4 @@
- /* eslint-disable */
+/* eslint-disable */
 "use client";
 
 import React, { useState, ChangeEvent } from 'react';
@@ -215,136 +215,145 @@ const UpgradePathCalculator: React.FC = () => {
   return (
     <div className="w-full max-w-4xl p-6 space-y-6">
       <div className="space-y-4">
-        <p className="text-lg">
-          Figuring out your upgrade path with SonarQube can be tricky. Here's a tool that lets you select a version and understand what versions you need to upgrade through in order to arrive at an active version.
-        </p>
-        
-        <Card className="bg-blue-50">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p><strong>Key things to know:</strong></p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
-                <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
-                <li>Community Build has no LTA versions, and no intermediate upgrades are currently needed after 9.9 LTA</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+      <p className="text-lg">
+        Figuring out your upgrade path with SonarQube can be tricky. Here's a tool that lets you select a version and understand what versions you need to upgrade through in order to arrive at an active version.
+      </p>
+      
+      <Card className="bg-blue-50">
+        <CardContent className="pt-6">
+        <div className="space-y-2">
+          <p><strong>Key things to know:</strong></p>
+          <ul className="list-disc pl-6 space-y-2">
+          <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
+          <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
+          <li>Community Build has no LTA versions, and no intermediate upgrades are currently needed after 9.9 LTA</li>
+          </ul>
+        </div>
+        </CardContent>
+      </Card>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-6">Calculate Your Upgrade Path</h1>
-        
-        <div className="flex gap-4 mb-4">
-          <select
-            value={version}
-            onChange={handleVersionChange}
-            className="flex-grow p-2 border rounded"
-          >
-            <option value="">Select version...</option>
-            {edition === "community" ? (
-              <>
-                <optgroup label="Community Edition">
-                  {VERSIONS
-                    .filter(ver => {
-                      const [major, minor] = ver.split('.').map(Number);
-                      return major < 10 || (major === 10 && minor <= 7);
-                    })
-                    .map(ver => (
-                      <option key={ver} value={ver}>
-                        {ver}
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Community Build">
-                  {COMMUNITY_BUILD_VERSIONS.map(ver => (
-                    <option key={ver} value={ver}>
-                      {ver}
-                    </option>
-                  ))}
-                </optgroup>
-              </>
-            ) : (
-              VERSIONS.map(ver => (
-                <option key={ver} value={ver}>
-                  {ver}
-                </option>
-              ))
-            )}
-          </select>
-          <select
-            value={edition}
-            onChange={handleEditionChange}
-            className="p-2 border rounded"
-          >
-            <option value="community">Community Build / Edition</option>
-            <option value="developer">Developer Edition</option>
-            <option value="enterprise">Enterprise Edition</option>
-            <option value="datacenter">Data Center Edition</option>
-          </select>
-          <button
-            onClick={calculatePath}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Calculate Path
-          </button>
-        </div>
-        
-        {error && (
-          <div className="text-red-500 mb-4">
-            {error}
-          </div>
-        )}
-
-        {messages.length > 0 && (
-          <div className={`${
-            messages.length === 1 && messages[0].includes('latest version')
-              ? 'bg-green-50 border border-green-200'
-              : 'bg-yellow-50 border border-yellow-200'
-          } p-4 rounded-lg mb-4`}>
-            {messages.map((message) => (
-              <p key={`message-${message}`} className={
-                messages.length === 1 && messages[0].includes('latest version')
-                  ? 'text-green-800'
-                  : 'text-yellow-800'
-              }>{message}</p>
+      <h1 className="text-2xl font-bold mb-6">Calculate Your Upgrade Path</h1>
+      
+      <div className="flex gap-4 mb-4">
+        <select
+        value={version}
+        onChange={handleVersionChange}
+        className="flex-grow p-2 border rounded"
+        >
+        <option value="">Select version...</option>
+        {edition === "community" ? (
+          <>
+          <optgroup label="Community Edition">
+            {VERSIONS
+            .filter(ver => {
+              const [major, minor] = ver.split('.').map(Number);
+              return major < 10 || (major === 10 && minor <= 7);
+            })
+            .map(ver => (
+              <option key={ver} value={ver}>
+              {ver}
+              </option>
             ))}
-          </div>
+          </optgroup>
+          <optgroup label="Community Build">
+            {COMMUNITY_BUILD_VERSIONS.map(ver => (
+            <option key={ver} value={ver}>
+              {ver}
+            </option>
+            ))}
+          </optgroup>
+          </>
+        ) : (
+          VERSIONS.map(ver => (
+          <option key={ver} value={ver}>
+            {ver}
+          </option>
+          ))
         )}
-
-        {path && (
-          <div className="bg-blue-50 p-6 rounded-lg">
-            <div className="flex flex-wrap gap-2 items-center">
-              {path.map((ver, index) => (
-                <React.Fragment key={ver}>
-                  <div className={`px-4 py-2 rounded ${
-                    LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] 
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {ver}
-                    {LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && (
-                      <span className="ml-1 text-xs">(LTA)</span>
-                    )}
-                    {index === path.length - 1 && 
-                     !LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && 
-                     edition !== "community" && 
-                     (isAfterLastLTA(path[0]) || isAfterLastLTA(path[path.length - 2] || path[0])) &&
-                     hasFutureLTAs(path[0]) && (
-                      <span className="ml-1 text-xs">(optional)</span>
-                    )}
-                  </div>
-                  {index < path.length - 1 && (
-                    <ChevronRight className="text-gray-400" size={20} />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        )}
+        </select>
+        <select
+        value={edition}
+        onChange={handleEditionChange}
+        className="p-2 border rounded"
+        >
+        <option value="community">Community Build / Edition</option>
+        <option value="developer">Developer Edition</option>
+        <option value="enterprise">Enterprise Edition</option>
+        <option value="datacenter">Data Center Edition</option>
+        </select>
+        <button
+        onClick={calculatePath}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+        Calculate Path
+        </button>
       </div>
+      
+      {error && (
+        <div className="text-red-500 mb-4">
+        {error}
+        </div>
+      )}
+
+      {messages.length > 0 && (
+        <div className={`${
+        messages.length === 1 && messages[0].includes('latest version')
+          ? 'bg-green-50 border border-green-200'
+          : 'bg-yellow-50 border border-yellow-200'
+        } p-4 rounded-lg mb-4`}>
+        {messages.map((message) => (
+          <p key={`message-${message}`} className={
+          messages.length === 1 && messages[0].includes('latest version')
+            ? 'text-green-800'
+            : 'text-yellow-800'
+          }>{message}</p>
+        ))}
+        </div>
+      )}
+
+      {path && (
+        <div className="bg-blue-50 p-6 rounded-lg">
+        <div className="flex flex-wrap gap-2 items-center">
+          {path.map((ver, index) => (
+          <React.Fragment key={ver}>
+            <div className={`px-4 py-2 rounded ${
+            LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] 
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-blue-100 text-blue-800'
+            }`}>
+            {ver}
+            {LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && (
+              <span className="ml-1 text-xs">(LTA)</span>
+            )}
+            {index === path.length - 1 && 
+             !LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && 
+             edition !== "community" && 
+             (isAfterLastLTA(path[0]) || isAfterLastLTA(path[path.length - 2] || path[0])) &&
+             hasFutureLTAs(path[0]) && (
+              <span className="ml-1 text-xs">(optional)</span>
+            )}
+            </div>
+            {index < path.length - 1 && (
+            <ChevronRight className="text-gray-400" size={20} />
+            )}
+          </React.Fragment>
+          ))}
+        </div>
+        </div>
+      )}
+      </div>
+      {path && !messages.some(msg => msg.includes('latest version')) && (
+      <button 
+        onClick={() => path && navigator.clipboard.writeText(path.join(" -> "))}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Copy Path
+      </button>
+      )}
     </div>
+    
   );
 };
 
