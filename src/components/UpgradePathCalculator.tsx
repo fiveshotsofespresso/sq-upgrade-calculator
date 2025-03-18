@@ -20,6 +20,12 @@ const VERSIONS: string[] = "6.7,6.7.1,6.7.2,6.7.3,6.7.4,6.7.5,6.7.6,6.7.7,7.0,7.
 
 const COMMUNITY_BUILD_VERSIONS: string[] = "24.12,25.1,25.2,25.3".split(',');
 
+// Object to track December releases for Community Build
+const DECEMBER_RELEASES: {[key: string]: boolean} = {
+  "24.12": true,
+  // Add future December releases here
+};
+
 const LTA_VERSIONS: LTAVersions = {
   "6.7": true,
   "7.9": true,
@@ -110,6 +116,32 @@ const getLatestVersion = (isCommunityBuild = false): string => {
   return VERSIONS[VERSIONS.length - 1];
 };
 
+// Get the latest December release version
+const getLatestDecemberRelease = (): string | null => {
+  return Object.keys(DECEMBER_RELEASES)
+    .sort((a, b) => compareVersions(b, a))[0] || null;
+};
+
+// Check if version is before the December release of its year
+const isBeforeDecemberRelease = (version: string): boolean => {
+  if (!version.includes('.')) return false;
+  
+  const [year, month] = version.split('.').map(Number);
+  return month < 12;
+};
+
+// Function to check if we need to add a December release to the upgrade path
+const needsDecemberRelease = (startVersion: string, targetVersion: string): boolean => {
+  // If already on a December release, no need to add it
+  if (DECEMBER_RELEASES[startVersion]) return false;
+  
+  const [startYear] = startVersion.split('.').map(Number);
+  const [targetYear] = targetVersion.split('.').map(Number);
+  
+  // If target is in a different year and start is before December release
+  return targetYear > startYear && isBeforeDecemberRelease(startVersion);
+};
+
 const findUpgradePath = (startVersion: string, edition: Edition = "community"): UpgradePath | null => {
   const path: string[] = [];
   const messages: string[] = [];
@@ -138,10 +170,45 @@ const findUpgradePath = (startVersion: string, edition: Edition = "community"): 
       
       messages.push("Note: After 10.7, Community Edition has been renamed to Community Build with a new versioning scheme.");
       
-      path.push(getLatestVersion(true));
-    } else if (startVersion !== getLatestVersion(true)) {
-        path.push(getLatestVersion(true));
+      // First add the earliest Community Build version (the transition point)
+      const firstCommunityBuild = COMMUNITY_BUILD_VERSIONS[0];
+      path.push(firstCommunityBuild);
+      
+      // If we're not already at the latest version, proceed with Community Build upgrade path
+      if (firstCommunityBuild !== getLatestVersion(true)) {
+        const latestVersion = getLatestVersion(true);
+        
+        // Check if we need to include December release
+        if (needsDecemberRelease(firstCommunityBuild, latestVersion)) {
+          const decemberRelease = getLatestDecemberRelease();
+          if (decemberRelease && compareVersions(decemberRelease, firstCommunityBuild) > 0) {
+            path.push(decemberRelease);
+            messages.push("Note: Upgrading through the December release is required for Community Build.");
+          }
+        }
+        
+        // Finally add the latest version
+        path.push(latestVersion);
       }
+    } else {
+      // Handle Community Build to Community Build upgrades
+      const latestVersion = getLatestVersion(true);
+      
+      if (startVersion !== latestVersion) {
+        // Check if we need to include December release
+        if (needsDecemberRelease(startVersion, latestVersion)) {
+          const decemberRelease = getLatestDecemberRelease();
+          if (decemberRelease && compareVersions(decemberRelease, startVersion) > 0) {
+            path.push(decemberRelease);
+          }
+        }
+        
+        // Add the latest version if it's not already added and different from December release
+        if (path[path.length - 1] !== latestVersion) {
+          path.push(latestVersion);
+        }
+      }
+    }
   } else {
     if (isAfterLastLTA(startVersion)) {
       const latestVersion = getLatestVersion();
@@ -226,7 +293,7 @@ const UpgradePathCalculator: React.FC = () => {
           <ul className="list-disc pl-6 space-y-2">
           <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
           <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
-          <li>Community Build has no LTA versions, and no intermediate upgrades are currently needed after 9.9 LTA</li>
+          <li>December releases (like 24.12) are required milestones when upgrading Community Build. You cannot skip over a December release when upgrading Community Build.</li>
           </ul>
         </div>
         </CardContent>
@@ -321,11 +388,16 @@ const UpgradePathCalculator: React.FC = () => {
             <div className={`px-4 py-2 rounded ${
             LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] 
               ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-blue-100 text-blue-800'
+              : DECEMBER_RELEASES[ver]
+                ? 'bg-blue-200 text-blue-800'
+                : 'bg-blue-100 text-blue-800'
             }`}>
             {ver}
             {LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && (
               <span className="ml-1 text-xs">(LTA)</span>
+            )}
+            {DECEMBER_RELEASES[ver] && (
+              <span className="ml-1 text-xs"></span>
             )}
             {index === path.length - 1 && 
              !LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && 
