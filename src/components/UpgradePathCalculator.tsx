@@ -383,7 +383,7 @@ const findEligibleCommunityVersions = (serverVersion: string): UpgradeResult => 
 };
 
 // MAIN COMPONENT
-const SonarQubeCalculator: React.FC = () => {
+const UpgradePathCalculator: React.FC = () => {
   // Common state
   const [calculatorType, setCalculatorType] = useState<CalculatorType>('version-upgrade');
   
