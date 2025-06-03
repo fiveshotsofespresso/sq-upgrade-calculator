@@ -67,7 +67,7 @@ const RELEASE_DATES: { [key: string]: Date } = {
   "25.3": new Date("2025-03-04"),
   "25.4": new Date("2025-04-07"),
   "25.5": new Date("2025-05-09"),
-  "25.5": new Date("2025-06-02"),
+  "25.6": new Date("2025-06-02"),
   
   // Server release dates
   "2025.1": new Date("2025-01-23"),
