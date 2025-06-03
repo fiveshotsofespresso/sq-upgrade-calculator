@@ -861,7 +861,7 @@ const UpgradePathCalculator: React.FC = () => {
 
       {/* Footer Info */}
       <div className="mt-8 pt-4 border-t text-sm text-gray-500">
-        <p>This tool helps you plan your SonarQube upgrade paths and migrations. Always refer to the <a href="https://docs.sonarqube.org/latest/setup/upgrade-guide/" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">official SonarQube upgrade guide</a> for detailed instructions.</p>
+        <p>This tool helps you plan your SonarQube upgrade paths and migrations. Always refer to the <a href="https://docs.sonarsource.com/sonarqube-server/latest/server-upgrade-and-maintenance/upgrade/roadmap/" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">official SonarQube upgrade guide</a> for detailed instructions.</p>
       </div>
     </div>
   );
