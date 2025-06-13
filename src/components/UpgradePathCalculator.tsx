@@ -47,15 +47,15 @@ const COMMUNITY_BUILD_VERSIONS_MIGRATION = [
   "10.0", "10.1", "10.2", "10.2.1", "10.3", "10.4", "10.4.1", "10.5", "10.5.1", 
   "10.6", "10.7", "10.8", "10.8.1",
   // New Community Build versions
-  "24.12", "25.1", "25.2", "25.3", "25.4", "25.5"
+  "24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6"
 ];
 
 // Server versions
 const SERVER_VERSIONS = [
-  "2025.1", "2025.2", "2025.3"
+  "2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3"
 ];
 
-// Define LTA Server versions
+// Define LTA Server versions (base versions only)
 const LTA_SERVER_VERSIONS = ["2025.1"];
 
 // Release dates mapping
@@ -71,6 +71,8 @@ const RELEASE_DATES: { [key: string]: Date } = {
   
   // Server release dates
   "2025.1": new Date("2025-01-23"),
+  "2025.1.1": new Date("2025-01-23"),
+  "2025.1.2": new Date("2025-01-23"),
   "2025.2": new Date("2025-03-26"),
   "2025.3": new Date("2025-05-29")
 };
@@ -139,7 +141,7 @@ const isValidVersion = (version: string, isCommunityBuild = false): boolean => {
     return VERSIONS.includes(version);
   }
 
-  // For Community Build versions
+  // For Community Build versions (24.x, 25.x, etc.)
   if (isCommunityBuild) {
     return COMMUNITY_BUILD_VERSIONS.includes(version);
   }
@@ -183,13 +185,24 @@ const needsDecemberRelease = (startVersion: string, targetVersion: string): bool
   return targetYear > startYear && isBeforeDecemberRelease(startVersion);
 };
 
+// Check if version is an LTA patch
+const isLTAPatch = (version: string): boolean => {
+  const baseVersion = version.split('.').slice(0, 2).join('.');
+  return LTA_VERSIONS[baseVersion] && version !== baseVersion;
+};
+
+// Get base LTA version
+const getBaseLTAVersion = (version: string): string => {
+  return version.split('.').slice(0, 2).join('.');
+};
+
 // VERSION UPGRADE CALCULATOR FUNCTIONS
 const findUpgradePath = (startVersion: string, edition: Edition = "community"): UpgradePath | null => {
   const path: string[] = [];
   const messages: string[] = [];
   
   // Determine if this is a Community Build version
-  const isCommunityBuild = Number(startVersion.split('.')[0]) >= 24;
+  const isCommunityBuild = Number(startVersion.split('.')[0]) >= 24 && Number(startVersion.split('.')[0]) < 2024;
   
   // Validate version
   if (!isValidVersion(startVersion, isCommunityBuild)) {
@@ -198,6 +211,23 @@ const findUpgradePath = (startVersion: string, edition: Edition = "community"): 
   
   // Add starting version
   path.push(startVersion);
+  
+  // Special handling for current LTA versions (2025.1 and 2025.1.1)
+  const baseLTA = getBaseLTAVersion(startVersion);
+  const latestLTA = "2025.1"; // The current/latest LTA
+  
+  if (baseLTA === latestLTA && LTA_VERSIONS[baseLTA] && startVersion.startsWith(baseLTA) && edition !== "community") {
+    const latestLTAPatch = getLatestPatchVersion(baseLTA);
+    const latestOverallVersion = getLatestVersion();
+    
+    if (startVersion === "2025.1" || startVersion === "2025.1.1") {
+      // Show both the recommended LTA patch and optional latest version
+      path.push(latestLTAPatch);
+      path.push(latestOverallVersion);
+      messages.push("Upgrading to the latest LTA patch (2025.1.2) is recommended for stability, but you can also upgrade directly to 2025.3 if you prefer newer features.");
+      return { path, messages };
+    }
+  }
   
   if (edition.toLowerCase() === "community") {
     if (!isCommunityBuild) {
@@ -280,20 +310,15 @@ const findUpgradePath = (startVersion: string, edition: Edition = "community"): 
 const findEligibleServerVersions = (communityVersion: string): UpgradeResult => {
   const targetVersions: string[] = [];
   const messages: string[] = [];
-  const upgradePath: string[] = [];
 
   // Legacy Community Edition (9.9 through 10.8.x)
   if (communityVersion.startsWith("9.9") || communityVersion.startsWith("10.")) {
-    // Must go through 2025.1 (LTA) first
-    upgradePath.push("2025.1");
+    // Must go through latest LTA patch first
+    const latestLTAPatch = getLatestPatchVersion("2025.1");
+    targetVersions.push(latestLTAPatch);
     
-    // Can then go to 2025.2 if desired
-    if (compareVersions("2025.2", "2025.1") > 0) {
-      upgradePath.push("2025.2");
-    }
-    
-    targetVersions.push(...upgradePath);
-    messages.push("Legacy Community Edition must upgrade to the LTA version (2025.1) before upgrading to later versions.");
+    messages.push(`Legacy Community Edition (9.9.x - 10.8.x) should migrate to the latest LTA patch (${latestLTAPatch}).`);
+    messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
     return { targetVersions, messages };
   }
 
@@ -305,51 +330,36 @@ const findEligibleServerVersions = (communityVersion: string): UpgradeResult => 
     return { targetVersions, messages };
   }
 
-  // First, check if any LTA versions were released after this Community Build
-  const eligibleLTAs = LTA_SERVER_VERSIONS.filter(lta => {
-    const ltaReleaseDate = RELEASE_DATES[lta];
-    return ltaReleaseDate && ltaReleaseDate > communityReleaseDate;
+  // Find all server versions released after this Community Build
+  const eligibleServerVersions = SERVER_VERSIONS.filter(serverVersion => {
+    const serverReleaseDate = RELEASE_DATES[serverVersion];
+    return serverReleaseDate && serverReleaseDate > communityReleaseDate;
   }).sort((a, b) => compareVersions(a, b));
 
-  // If there's an eligible LTA, it must be the first upgrade target
-  if (eligibleLTAs.length > 0) {
-    upgradePath.push(eligibleLTAs[0]);
-    
-    // Then add non-LTA versions released after the Community Build
-    SERVER_VERSIONS.forEach(serverVersion => {
-      if (!LTA_SERVER_VERSIONS.includes(serverVersion)) {
-        const serverReleaseDate = RELEASE_DATES[serverVersion];
-        if (serverReleaseDate && serverReleaseDate > communityReleaseDate && 
-            compareVersions(serverVersion, eligibleLTAs[0]) > 0) {
-          upgradePath.push(serverVersion);
-        }
-      }
-    });
-  } else {
-    // If no eligible LTA, check if there are any eligible non-LTA versions
-    // that were released after the latest LTA
-    const latestLTA = LTA_SERVER_VERSIONS.sort((a, b) => compareVersions(b, a))[0];
-    
-    SERVER_VERSIONS.forEach(serverVersion => {
-      if (!LTA_SERVER_VERSIONS.includes(serverVersion)) {
-        const serverReleaseDate = RELEASE_DATES[serverVersion];
-        if (serverReleaseDate && serverReleaseDate > communityReleaseDate && 
-            compareVersions(serverVersion, latestLTA) > 0) {
-          upgradePath.push(serverVersion);
-        }
-      }
-    });
-  }
-
-  targetVersions.push(...upgradePath);
-
-  if (targetVersions.length === 0) {
+  if (eligibleServerVersions.length === 0) {
     messages.push("No compatible SonarQube Server version is available yet. Please wait for the next Server release.");
-  } else if (eligibleLTAs.length > 0) {
-    messages.push("You must upgrade through LTA version 2025.1 before upgrading to later versions.");
-  } else {
-    messages.push("Community Build can only upgrade to Server versions released after it.");
+    return { targetVersions, messages };
   }
+
+  // Get the latest eligible server version
+  const latestEligibleServer = eligibleServerVersions[eligibleServerVersions.length - 1];
+  
+  // Check if it's an LTA - if so, use the latest patch
+  const baseLTA = getBaseLTAVersion(latestEligibleServer);
+  let targetServerVersion: string;
+  
+  if (LTA_SERVER_VERSIONS.includes(baseLTA)) {
+    targetServerVersion = getLatestPatchVersion(baseLTA);
+  } else {
+    targetServerVersion = latestEligibleServer;
+  }
+
+  targetVersions.push(targetServerVersion);
+  messages.push(`Community Build ${communityVersion} should migrate to Server ${targetServerVersion}.`);
+  messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
+  
+  // Add note about future compatibility
+  messages.push("Note: You'll be able to upgrade to all future Server versions until a new compatibility cutoff is introduced.");
 
   return { targetVersions, messages };
 };
@@ -366,20 +376,32 @@ const findEligibleCommunityVersions = (serverVersion: string): UpgradeResult => 
     return { targetVersions, messages };
   }
   
-  // Find Community Build versions released after this Server version
+  // Find the latest Community Build version released after this Server version
+  let latestCompatible: string | null = null;
+  
   COMMUNITY_BUILD_VERSIONS_MIGRATION
     .filter(ver => !ver.startsWith("9") && !ver.startsWith("10")) // Only consider new Community Build versions
     .forEach(communityVersion => {
       const communityReleaseDate = RELEASE_DATES[communityVersion];
       if (communityReleaseDate && communityReleaseDate > serverReleaseDate) {
-        targetVersions.push(communityVersion);
+        if (!latestCompatible || compareVersions(communityVersion, latestCompatible) > 0) {
+          latestCompatible = communityVersion;
+        }
       }
     });
   
-  if (targetVersions.length === 0) {
-    messages.push("No compatible Community Build version is available yet. Please wait for the next Community Build release.");
+  if (latestCompatible) {
+    targetVersions.push(latestCompatible);
+    messages.push(`Server ${serverVersion} can migrate to Community Build ${latestCompatible}.`);
+    
+    // Check if it's a December release that will be required for future upgrades
+    if (DECEMBER_RELEASES[latestCompatible]) {
+      messages.push("Note: This is a December release, which will be a required milestone for future Community Build upgrades.");
+    }
+    
+    messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
   } else {
-    messages.push("SonarQube Server can only migrate to Community Build versions released after it.");
+    messages.push("No compatible Community Build version is available yet. Please wait for the next Community Build release.");
   }
   
   return { targetVersions, messages };
@@ -413,15 +435,38 @@ const UpgradePathCalculator: React.FC = () => {
   };
 
   const handleEditionChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setEdition(e.target.value as Edition);
+    const newEdition = e.target.value as Edition;
+    setEdition(newEdition);
     setError('');
     setPath(null);
     setMessages([]);
+    
+    // Clear version if switching between Community and other editions
+    // and current version is incompatible
+    if (version) {
+      const isCommunityBuild = Number(version.split('.')[0]) >= 24;
+      if (newEdition === 'community' && Number(version.split('.')[0]) >= 2025) {
+        setVersion('');
+      } else if (newEdition !== 'community' && isCommunityBuild) {
+        setVersion('');
+      }
+    }
   };
 
   const calculatePath = () => {
     if (!version) {
       setError('Please enter a version');
+      return;
+    }
+
+    // Validate version compatibility with edition
+    const isCommunityBuild = Number(version.split('.')[0]) >= 24 && Number(version.split('.')[0]) < 2024;
+    if (edition === 'community' && Number(version.split('.')[0]) >= 2025) {
+      setError('Server versions (2025.x) are not available for Community edition. Please select a different edition.');
+      return;
+    }
+    if (edition !== 'community' && isCommunityBuild) {
+      setError('Community Build versions are only available for Community edition. Please select Community edition.');
       return;
     }
 
@@ -546,6 +591,7 @@ const UpgradePathCalculator: React.FC = () => {
                   <p><strong>Key things to know:</strong></p>
                   <ul className="list-disc pl-6 space-y-2">
                     <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
+                    <li>When upgrading from an LTA version, it's recommended to first upgrade to the latest patch of that LTA.</li>
                     <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
                     <li>December releases (like 24.12) are required milestones when upgrading Community Build. You cannot skip over a December release when upgrading Community Build.</li>
                   </ul>
@@ -568,7 +614,7 @@ const UpgradePathCalculator: React.FC = () => {
                       {VERSIONS
                         .filter(ver => {
                           const [major, minor] = ver.split('.').map(Number);
-                          return major < 10 || (major === 10 && minor <= 7);
+                          return major < 10 || (major === 10 && minor <= 8);
                         })
                         .map(ver => (
                           <option key={ver} value={ver}>
@@ -620,14 +666,18 @@ const UpgradePathCalculator: React.FC = () => {
               <div className={`${
                 messages.length === 1 && messages[0].includes('latest version')
                   ? 'bg-green-50 border border-green-200'
-                  : 'bg-yellow-50 border border-yellow-200'
+                  : messages[0].includes('you can either')
+                    ? 'bg-blue-50 border border-blue-200'
+                    : 'bg-yellow-50 border border-yellow-200'
               } p-4 rounded-lg mb-4`}>
-                {messages.map((message) => (
-                  <p key={`message-${message}`} className={
+                {messages.map((message, index) => (
+                  <p key={`message-${message}`} className={`${
                     messages.length === 1 && messages[0].includes('latest version')
                       ? 'text-green-800'
-                      : 'text-yellow-800'
-                  }>{message}</p>
+                      : messages[0].includes('you can either')
+                        ? 'text-blue-800'
+                        : 'text-yellow-800'
+                  } ${message.startsWith('•') ? 'ml-4' : ''}`}>{message}</p>
                 ))}
               </div>
             )}
@@ -635,35 +685,46 @@ const UpgradePathCalculator: React.FC = () => {
             {path && (
               <div className="bg-blue-50 p-6 rounded-lg">
                 <div className="flex flex-wrap gap-2 items-center">
-                  {path.map((ver, index) => (
-                    <React.Fragment key={ver}>
-                      <div className={`px-4 py-2 rounded ${
-                        LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : DECEMBER_RELEASES[ver]
-                            ? 'bg-blue-200 text-blue-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {ver}
-                        {LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && (
-                          <span className="ml-1 text-xs">(LTA)</span>
+                  {path.map((ver, index) => {
+                    const baseLTAVersion = getBaseLTAVersion(ver);
+                    const isRecommendedLTAPatch = ver === "2025.1.2" && 
+                      (path[0] === "2025.1" || path[0] === "2025.1.1");
+                    const isOptionalAfterLTA = index > 0 && 
+                      edition !== "community" && 
+                      isAfterLastLTA(ver) && 
+                      !LTA_VERSIONS[baseLTAVersion] &&
+                      index === path.length - 1 &&
+                      (path[0] === "2025.1" || path[0] === "2025.1.1");
+                    
+                    return (
+                      <React.Fragment key={ver}>
+                        <div className={`px-4 py-2 rounded ${
+                          LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] 
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : DECEMBER_RELEASES[ver]
+                              ? 'bg-blue-200 text-blue-800'
+                              : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {ver}
+                          {LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && (
+                            <span className="ml-1 text-xs">(LTA)</span>
+                          )}
+                          {DECEMBER_RELEASES[ver] && (
+                            <span className="ml-1 text-xs">(December Release)</span>
+                          )}
+                          {isRecommendedLTAPatch && (
+                            <span className="ml-1 text-xs">(recommended)</span>
+                          )}
+                          {isOptionalAfterLTA && (
+                            <span className="ml-1 text-xs">(optional)</span>
+                          )}
+                        </div>
+                        {index < path.length - 1 && (
+                          <ChevronRight className="text-gray-400" size={20} />
                         )}
-                        {DECEMBER_RELEASES[ver] && (
-                          <span className="ml-1 text-xs"></span>
-                        )}
-                        {index === path.length - 1 && 
-                         !LTA_VERSIONS[ver.split('.').slice(0, 2).join('.')] && 
-                         edition !== "community" && 
-                         (isAfterLastLTA(path[0]) || isAfterLastLTA(path[path.length - 2] || path[0])) &&
-                         hasFutureLTAs(path[0]) && (
-                          <span className="ml-1 text-xs">(optional)</span>
-                        )}
-                      </div>
-                      {index < path.length - 1 && (
-                        <ChevronRight className="text-gray-400" size={20} />
-                      )}
-                    </React.Fragment>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -686,9 +747,9 @@ const UpgradePathCalculator: React.FC = () => {
                 <div className="space-y-2">
                   <p><strong>Important information:</strong></p>
                   <ul className="list-disc pl-6 space-y-2">
-                    <li>Legacy Community Edition (9.9 - 10.8.1) must first upgrade to LTA version 2025.1 before upgrading to later versions.</li>
+                    <li>Legacy Community Edition (9.9.x - 10.8.x) must upgrade through the latest LTA patch (2025.1.2) before moving to later Server versions.</li>
+                    <li>Legacy Community Edition users can also switch to the same version of a commercial edition and continue the upgrade path from there.</li>
                     <li>Newer Community Build versions (24.12 and later) can only upgrade to Server versions released <strong>after</strong> them.</li>
-                    <li>When upgrading, you must always go through the latest LTA version (2025.1) before upgrading to non-LTA versions.</li>
                     <li>SonarQube Server can only migrate to Community Build versions released <strong>after</strong> it.</li>
                     <li>If no compatible version exists, you'll need to wait for the next release.</li>
                   </ul>
@@ -699,7 +760,7 @@ const UpgradePathCalculator: React.FC = () => {
             <h2 className="text-2xl font-bold">Edition Migration Calculator</h2>
             
             <div className="flex gap-4 mb-4">
-                              <select
+              <select
                 value={direction}
                 onChange={handleDirectionChange}
                 className="p-2 border rounded"
@@ -742,7 +803,7 @@ const UpgradePathCalculator: React.FC = () => {
                     <option value="">Select Server version...</option>
                     {SERVER_VERSIONS.map(ver => (
                       <option key={ver} value={ver}>
-                        {ver}
+                        {ver} {LTA_SERVER_VERSIONS.includes(getBaseLTAVersion(ver)) && '(LTA)'}
                       </option>
                     ))}
                   </>
@@ -781,7 +842,7 @@ const UpgradePathCalculator: React.FC = () => {
             {targetVersions && targetVersions.length > 0 && (
               <div className="bg-green-50 p-6 rounded-lg">
                 <p className="mb-2 font-medium">
-                  {direction === 'community-to-server' ? 'Upgrade path:' : 'Compatible versions:'}
+                  {direction === 'community-to-server' ? 'Migration target:' : 'Migration target:'}
                 </p>
                 <div className="flex flex-wrap gap-2 items-center">
                   {migrationVersion && (
@@ -791,7 +852,7 @@ const UpgradePathCalculator: React.FC = () => {
                         : 'bg-purple-100 text-purple-800'
                     }`}>
                       {migrationVersion}
-                      {LTA_SERVER_VERSIONS.includes(migrationVersion) && (
+                      {LTA_SERVER_VERSIONS.includes(getBaseLTAVersion(migrationVersion)) && (
                         <span className="ml-1 text-xs">(LTA)</span>
                       )}
                     </div>
@@ -801,21 +862,21 @@ const UpgradePathCalculator: React.FC = () => {
                     <React.Fragment key={ver}>
                       <div className={`px-4 py-2 rounded ${
                         direction === 'community-to-server'
-                          ? (LTA_SERVER_VERSIONS.includes(ver)
+                          ? (LTA_SERVER_VERSIONS.includes(getBaseLTAVersion(ver))
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-green-100 text-green-800')
-                          : 'bg-blue-100 text-blue-800'
+                          : (DECEMBER_RELEASES[ver]
+                            ? 'bg-blue-200 text-blue-800'
+                            : 'bg-blue-100 text-blue-800')
                       }`}>
                         {ver}
-                        {LTA_SERVER_VERSIONS.includes(ver) && (
+                        {LTA_SERVER_VERSIONS.includes(getBaseLTAVersion(ver)) && (
                           <span className="ml-1 text-xs">(LTA)</span>
                         )}
+                        {DECEMBER_RELEASES[ver] && (
+                          <span className="ml-1 text-xs">(December Release)</span>
+                        )}
                       </div>
-                      {index < targetVersions.length - 1 && (
-                        direction === 'community-to-server'
-                          ? <ChevronRight className="text-gray-400" size={20} />
-                          : <div className="text-gray-400">or</div>
-                      )}
                     </React.Fragment>
                   ))}
                 </div>
