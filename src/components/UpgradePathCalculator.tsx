@@ -330,6 +330,19 @@ const findEligibleServerVersions = (communityVersion: string): UpgradeResult => 
     return { targetVersions, messages };
   }
 
+  // Check if this Community Build was released before the current LTA (2025.1)
+  const currentLTA = "2025.1";
+  const currentLTADate = RELEASE_DATES[currentLTA];
+  
+  if (currentLTADate && communityReleaseDate < currentLTADate) {
+    // Community Build released before current LTA should migrate to latest LTA patch
+    const latestLTAPatch = getLatestPatchVersion(currentLTA);
+    targetVersions.push(latestLTAPatch);
+    messages.push(`Community Build ${communityVersion} (released before the current LTA) should migrate to the latest LTA patch (${latestLTAPatch}).`);
+    messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
+    return { targetVersions, messages };
+  }
+
   // Find all server versions released after this Community Build
   const eligibleServerVersions = SERVER_VERSIONS.filter(serverVersion => {
     const serverReleaseDate = RELEASE_DATES[serverVersion];
@@ -356,10 +369,12 @@ const findEligibleServerVersions = (communityVersion: string): UpgradeResult => 
 
   targetVersions.push(targetServerVersion);
   messages.push(`Community Build ${communityVersion} should migrate to Server ${targetServerVersion}.`);
-  messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
   
-  // Add note about future compatibility
-  messages.push("Note: You'll be able to upgrade to all future Server versions until a new compatibility cutoff is introduced.");
+  // Only show "use Version Upgrade Path calculator" if not already at latest
+  const latestServerVersion = SERVER_VERSIONS[SERVER_VERSIONS.length - 1];
+  if (targetServerVersion !== latestServerVersion) {
+    messages.push("After migrating, use the Version Upgrade Path calculator to continue upgrading.");
+  }
 
   return { targetVersions, messages };
 };
@@ -591,7 +606,6 @@ const UpgradePathCalculator: React.FC = () => {
                   <p><strong>Key things to know:</strong></p>
                   <ul className="list-disc pl-6 space-y-2">
                     <li>LTA (Long Term Active) versions are special releases that you must upgrade through. You cannot skip over an LTA version when upgrading.</li>
-                    <li>When upgrading from an LTA version, it's recommended to first upgrade to the latest patch of that LTA.</li>
                     <li>Community Edition has been renamed to Community Build starting after version 10.7, with a new versioning scheme (24.12 and later).</li>
                     <li>December releases (like 24.12) are required milestones when upgrading Community Build. You cannot skip over a December release when upgrading Community Build.</li>
                   </ul>
@@ -689,12 +703,17 @@ const UpgradePathCalculator: React.FC = () => {
                     const baseLTAVersion = getBaseLTAVersion(ver);
                     const isRecommendedLTAPatch = ver === "2025.1.2" && 
                       (path[0] === "2025.1" || path[0] === "2025.1.1");
-                    const isOptionalAfterLTA = index > 0 && 
-                      edition !== "community" && 
-                      isAfterLastLTA(ver) && 
-                      !LTA_VERSIONS[baseLTAVersion] &&
-                      index === path.length - 1 &&
-                      (path[0] === "2025.1" || path[0] === "2025.1.1");
+                    
+                    // Check if this is an optional upgrade after an LTA
+                    let isOptional = false;
+                    if (edition !== "community" && index === path.length - 1 && index > 0) {
+                      // Check if the previous version in the path is an LTA
+                      const prevVersion = path[index - 1];
+                      const prevBaseLTA = getBaseLTAVersion(prevVersion);
+                      if (LTA_VERSIONS[prevBaseLTA] && !LTA_VERSIONS[baseLTAVersion]) {
+                        isOptional = true;
+                      }
+                    }
                     
                     return (
                       <React.Fragment key={ver}>
@@ -715,7 +734,7 @@ const UpgradePathCalculator: React.FC = () => {
                           {isRecommendedLTAPatch && (
                             <span className="ml-1 text-xs">(recommended)</span>
                           )}
-                          {isOptionalAfterLTA && (
+                          {isOptional && (
                             <span className="ml-1 text-xs">(optional)</span>
                           )}
                         </div>
@@ -750,6 +769,7 @@ const UpgradePathCalculator: React.FC = () => {
                     <li>Legacy Community Edition (9.9.x - 10.8.x) must upgrade through the latest LTA patch (2025.1.2) before moving to later Server versions.</li>
                     <li>Legacy Community Edition users can also switch to the same version of a commercial edition and continue the upgrade path from there.</li>
                     <li>Newer Community Build versions (24.12 and later) can only upgrade to Server versions released <strong>after</strong> them.</li>
+                    <li>When upgrading, you must always go through the latest LTA patch before upgrading to non-LTA versions.</li>
                     <li>SonarQube Server can only migrate to Community Build versions released <strong>after</strong> it.</li>
                     <li>If no compatible version exists, you'll need to wait for the next release.</li>
                   </ul>
