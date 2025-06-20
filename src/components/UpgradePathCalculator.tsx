@@ -46,10 +46,10 @@ const VERSIONS = {
     "9.7", "9.7.1", "9.8", "9.9", "9.9.1", "9.9.2", "9.9.3", "9.9.4", "9.9.5", "9.9.6", "9.9.7", "9.9.8",
     "10.0", "10.1", "10.2", "10.2.1", "10.3", "10.4", "10.4.1", "10.5", "10.5.1",
     "10.6", "10.7", "10.8", "10.8.1",
-    "2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3"
+    "2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3", "2025.3.1"
   ],
   communityBuild: ["24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6"],
-  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3"]
+  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3", "2025.3.1"]
 };
 
 const LTA_VERSIONS = new Set(["6.7", "7.9", "8.9", "9.9", "2025.1"]);
@@ -68,7 +68,8 @@ const RELEASE_DATES: Record<string, Date> = {
   "2025.1.1": new Date("2025-01-23"),
   "2025.1.2": new Date("2025-01-23"),
   "2025.2": new Date("2025-03-26"),
-  "2025.3": new Date("2025-05-29")
+  "2025.3": new Date("2025-05-29"),
+  "2025.3.1": new Date("2025-05-29")
 };
 
 // ============================================================================
@@ -191,7 +192,7 @@ class UpgradePathCalculator {
       path.push(latestPatch, latestOverall);
       messages.push(
         "Upgrading to the latest LTA patch (2025.1.2) is recommended for stability, " +
-        "but you can also upgrade directly to 2025.3 if you prefer newer features."
+        "but you can also upgrade directly to 2025.3.1 if you prefer newer features."
       );
       return true;
     }
