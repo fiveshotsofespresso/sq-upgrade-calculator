@@ -46,10 +46,10 @@ const VERSIONS = {
     "9.7", "9.7.1", "9.8", "9.9", "9.9.1", "9.9.2", "9.9.3", "9.9.4", "9.9.5", "9.9.6", "9.9.7", "9.9.8",
     "10.0", "10.1", "10.2", "10.2.1", "10.3", "10.4", "10.4.1", "10.5", "10.5.1",
     "10.6", "10.7", "10.8", "10.8.1",
-    "2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3", "2025.3.1"
+    "2025.1", "2025.1.1", "2025.1.2", "2025.1.3", "2025.2", "2025.3", "2025.3.1"
   ],
-  communityBuild: ["24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6"],
-  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.2", "2025.3", "2025.3.1"]
+  communityBuild: ["24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6","25.7"],
+  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.1.3", "2025.2", "2025.3", "2025.3.1"]
 };
 
 const LTA_VERSIONS = new Set(["6.7", "7.9", "8.9", "9.9", "2025.1"]);
@@ -64,9 +64,11 @@ const RELEASE_DATES: Record<string, Date> = {
   "25.4": new Date("2025-04-07"),
   "25.5": new Date("2025-05-09"),
   "25.6": new Date("2025-06-02"),
+  "25.7": new Date("2025-07-07"),
   "2025.1": new Date("2025-01-23"),
   "2025.1.1": new Date("2025-01-23"),
   "2025.1.2": new Date("2025-01-23"),
+  "2025.1.3": new Date("2025-01-23"),
   "2025.2": new Date("2025-03-26"),
   "2025.3": new Date("2025-05-29"),
   "2025.3.1": new Date("2025-05-29")
@@ -185,13 +187,13 @@ class UpgradePathCalculator {
     const latestLTA = "2025.1";
     
     if (baseLTA === latestLTA && edition !== "community" && 
-        (version === "2025.1" || version === "2025.1.1")) {
+        (version === "2025.1" || version === "2025.1.1" || version === "2025.1.2")) {
       const latestPatch = versionUtils.getLatestPatch(baseLTA);
       const latestOverall = versionUtils.getLatest();
       
       path.push(latestPatch, latestOverall);
       messages.push(
-        "Upgrading to the latest LTA patch (2025.1.2) is recommended for stability, " +
+        "Upgrading to the latest LTA patch (2025.1.3) is recommended for stability, " +
         "but you can also upgrade directly to 2025.3.1 if you prefer newer features."
       );
       return true;
@@ -440,7 +442,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ type }) => (
             </>
           ) : (
             <>
-              <li>Legacy Community Edition (9.9.x - 10.8.x) must upgrade through the latest LTA patch (2025.1.2) before moving to later Server versions.</li>
+              <li>Legacy Community Edition (9.9.x - 10.8.x) must upgrade through the latest LTA patch (2025.1.3) before moving to later Server versions.</li>
               <li>Legacy Community Edition users can also switch to the same version of a commercial edition and continue the upgrade path from there.</li>
               <li>Newer Community Build versions (24.12 and later) can only upgrade to Server versions released <strong>after</strong> them.</li>
               <li>When upgrading, you must always go through the latest LTA patch before upgrading to non-LTA versions.</li>
@@ -656,7 +658,7 @@ const SonarQubeCalculator: React.FC = () => {
             
             // Check for recommended/optional badges
             let badgeType: 'recommended' | 'optional' | undefined;
-            if (ver === "2025.1.2" && (path[0] === "2025.1" || path[0] === "2025.1.1")) {
+            if (ver === "2025.1.3" && (path[0] === "2025.1" || path[0] === "2025.1.1" || path[0] === "2025.1.2")) {
               badgeType = 'recommended';
             } else if (edition !== "community" && index === path.length - 1 && index > 0) {
               const prevVersion = path[index - 1];
