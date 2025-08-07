@@ -48,8 +48,8 @@ const VERSIONS = {
     "10.6", "10.7", "10.8", "10.8.1",
     "2025.1", "2025.1.1", "2025.1.2", "2025.1.3", "2025.2", "2025.3", "2025.3.1", "2025.4.0", "2025.4.1"
   ],
-  communityBuild: ["24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6","25.7"],
-  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.1.3", "2025.2", "2025.3", "2025.3.1", "2025.4.0", "2025.4.1"]
+  communityBuild: ["24.12", "25.1", "25.2", "25.3", "25.4", "25.5", "25.6","25.7","25.8"],
+  server: ["2025.1", "2025.1.1", "2025.1.2", "2025.1.3", "2025.2", "2025.3", "2025.3.1", "2025.4.0", "2025.4.1", "2025.4.2]
 };
 
 const LTA_VERSIONS = new Set(["6.7", "7.9", "8.9", "9.9", "2025.1"]);
@@ -65,6 +65,7 @@ const RELEASE_DATES: Record<string, Date> = {
   "25.5": new Date("2025-05-09"),
   "25.6": new Date("2025-06-02"),
   "25.7": new Date("2025-07-07"),
+  "25.8": new Date("2025-08-07"),
   "2025.1": new Date("2025-01-23"),
   "2025.1.1": new Date("2025-01-23"),
   "2025.1.2": new Date("2025-01-23"),
@@ -73,7 +74,8 @@ const RELEASE_DATES: Record<string, Date> = {
   "2025.3": new Date("2025-05-29"),
   "2025.3.1": new Date("2025-05-29"),
   "2025.4.0": new Date("2025-07-31"),
-  "2025.4.1": new Date("2025-07-31")
+  "2025.4.1": new Date("2025-07-31"),
+  "2025.4.2": new Date("2025-07-31")
 };
 
 // ============================================================================
@@ -196,7 +198,7 @@ class UpgradePathCalculator {
       path.push(latestPatch, latestOverall);
       messages.push(
         "Upgrading to the latest LTA patch (2025.1.3) is recommended for stability, " +
-        "but you can also upgrade directly to 2025.4.1 if you prefer newer features."
+        "but you can also upgrade directly to 2025.4.2 if you prefer newer features."
       );
       return true;
     }
