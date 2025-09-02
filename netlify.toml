@@ -4,3 +4,9 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/*"
+  to = "https://sq-update-calculator.netlify.app/:splat"
+  status = 301
+  force = true
